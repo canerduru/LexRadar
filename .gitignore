@@ -1,0 +1,28 @@
+# Environment variables — NEVER commit this
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+.venv311/
+*.egg-info/
+dist/
+build/
+
+# Data directories (large files, generated content)
+data/raw_pdfs/
+data/parsed_markdown/
+data/parsed_json/
+data/intelligence_reports/
+data/chroma_db/
+data/download_queue.json
+data/pipeline_runs.jsonl
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/

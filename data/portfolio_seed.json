@@ -1,0 +1,67 @@
+[
+  {
+    "client_name": "Koç Holding",
+    "asset_type": "ARSA",
+    "district": "Kadıköy",
+    "city": "İstanbul",
+    "ada_parsel": "125/34",
+    "address": "Fikirtepe Mah. Hızırbey Cad.",
+    "area_sqm": 5400.5,
+    "current_value_try": 150000000.0,
+    "tags": ["kentsel dönüşüm", "imar beklentisi"],
+    "notes": "Köşe parsel, yüksek emsal bekleniyor.",
+    "watchlist_keywords": ["kentsel dönüşüm", "imar", "plan tadilatı", "kadıköy"]
+  },
+  {
+    "client_name": "Sabancı Holding",
+    "asset_type": "BİNA",
+    "district": "Levent",
+    "city": "İstanbul",
+    "ada_parsel": "45/1",
+    "address": "Büyükdere Cad. No:99",
+    "area_sqm": 12000.0,
+    "current_value_try": 450000000.0,
+    "tags": ["ticari", "prestij"],
+    "notes": "Şirket genel merkezi, metroya yakın.",
+    "watchlist_keywords": ["levent", "büyükdere", "ticari imar", "metro"]
+  },
+  {
+    "client_name": "Eczacıbaşı",
+    "asset_type": "TARLA",
+    "district": "Çeşme",
+    "city": "İzmir",
+    "ada_parsel": "80/5",
+    "address": "Ovacık Köyü Yolu Üzeri",
+    "area_sqm": 25000.0,
+    "current_value_try": 75000000.0,
+    "tags": ["turizm", "yatırım"],
+    "notes": "Turizm imarı bekleniyor, denize sıfır.",
+    "watchlist_keywords": ["çeşme", "turizm imarı", "kıyı kanunu"]
+  },
+  {
+    "client_name": "Zorlu Holding",
+    "asset_type": "PROJE",
+    "district": "Çankaya",
+    "city": "Ankara",
+    "ada_parsel": "210/12",
+    "address": "Turan Güneş Bulvarı",
+    "area_sqm": 8500.0,
+    "current_value_try": 220000000.0,
+    "tags": ["karma kullanım", "avm"],
+    "notes": "Karma proje geliştirilecek alan.",
+    "watchlist_keywords": ["çankaya", "avm", "yapı ruhsatı", "karma"]
+  },
+  {
+    "client_name": "Rönesans Holding",
+    "asset_type": "DEPO",
+    "district": "Gebze",
+    "city": "Kocaeli",
+    "ada_parsel": "350/8",
+    "address": "OSB İçi, 5. Cadde",
+    "area_sqm": 40000.0,
+    "current_value_try": 310000000.0,
+    "tags": ["lojistik", "sanayi"],
+    "notes": "Lojistik üssü, stratejik konum.",
+    "watchlist_keywords": ["gebze", "organize sanayi", "kamulaştırma", "lojistik"]
+  }
+]

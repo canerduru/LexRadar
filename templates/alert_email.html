@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-width; line-height: 1.6; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+  .header { border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 20px; }
+  .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 0.9em; margin-bottom: 15px; }
+  .badge.opportunity { background-color: #e6f4ea; color: #2e7d32; border: 1px solid #a5d6a7; }
+  .badge.risk { background-color: #fce8e6; color: #c62828; border: 1px solid #ef9a9a; }
+  .badge.mixed { background-color: #fff3e0; color: #e65100; border: 1px solid #ffcc80; }
+  .badge.low { background-color: #fffde7; color: #f57f17; }
+  .badge.med { background-color: #fff3e0; color: #e65100; }
+  .badge.high { background-color: #fbe9e7; color: #d84315; }
+  .section { margin-bottom: 25px; padding: 15px; background: #fafafa; border-radius: 8px; }
+  .item-card { margin-bottom: 15px; padding: 15px; border: 1px solid #e0e0e0; border-radius: 4px; background: #fff; }
+  h2 { color: #1a1a1a; margin-top: 0; }
+  h3 { color: #444; }
+  .btn { display: inline-block; padding: 10px 20px; background-color: #1976d2; color: #fff; text-decoration: none; border-radius: 4px; font-weight: 500; }
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee; font-size: 0.8em; color: #666; text-align: center; }
+  ul { padding-left: 20px; margin: 5px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h2>🏗️ Real Estate Intelligence Radar — Alert</h2>
+  <span class="badge {{ report.overall_signal | lower }}">{{ report.overall_signal }}</span>
+  <span style="font-size: 0.9em; color: #666; margin-left: 10px;">Date: {{ report.gazette_date }}</span>
+</div>
+
+<div class="section">
+  <h3>Executive Summary</h3>
+  <p><strong>EN:</strong> {{ report.executive_summary_en }}</p>
+  <p><strong>TR:</strong> {{ report.executive_summary_tr }}</p>
+</div>
+
+<div class="section">
+  <h3>🎯 Matched Portfolio Items</h3>
+  {% for client, items in matched_groups.items() %}
+    <h4 style="margin-bottom: 10px; color: #1976d2;">{{ client }}</h4>
+    {% for match in items %}
+    <div class="item-card">
+      <div style="font-weight: 500; margin-bottom: 5px;">{{ match.portfolio_item.asset_type }} — {{ match.portfolio_item.address }}</div>
+      <div style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+        📍 {{ match.portfolio_item.district }}, {{ match.portfolio_item.city }} | 📊 Match Confidence: {{ "%.0f"|format(match.similarity_score * 100) }}%
+      </div>
+      <div><strong>Why it matched:</strong></div>
+      <ul>
+        {% for reason in match.match_reasons %}
+          <li>{{ reason }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endfor %}
+  {% endfor %}
+</div>
+
+{% if report.opportunities %}
+<div class="section">
+  <h3>🚀 Opportunities</h3>
+  {% for opp in report.opportunities %}
+  <div class="item-card">
+    <strong>{{ opp.type }}</strong>
+    <p style="margin: 5px 0;">{{ opp.description }}</p>
+    <div style="font-size: 0.85em; color: #666;">
+      <span>📍 {{ opp.location }}</span>
+      {% if opp.parcel_id %} | <span>🗺️ Ada/Parsel: {{ opp.parcel_id }}</span>{% endif %}
+      {% if opp.monetary_value %} | <span>💰 Value: {{ opp.monetary_value }}</span>{% endif %}
+      | <span>⚡ Confidence: {{ "%.0f"|format(opp.confidence * 100) }}%</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if report.risks %}
+<div class="section">
+  <h3>⚠️ Risks</h3>
+  {% for rsk in report.risks %}
+  <div class="item-card">
+    <strong>{{ rsk.type }}</strong> 
+    <span class="badge {{ rsk.severity | lower }}">{{ rsk.severity }}</span>
+    <p style="margin: 5px 0;">{{ rsk.description }}</p>
+    <div style="font-size: 0.85em; color: #666;">
+      <span>📍 {{ rsk.location }}</span>
+      {% if rsk.affected_entity %} | <span>🏢 Affected: {{ rsk.affected_entity }}</span>{% endif %}
+      | <span>⚡ Confidence: {{ "%.0f"|format(rsk.confidence * 100) }}%</span>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div style="margin-top: 30px; text-align: center;">
+  <a href="{{ report.source_url }}" class="btn" target="_blank">View Original Document</a>
+</div>
+
+<div class="footer">
+  <p>Processed at: {{ report.processed_at }}</p>
+  <p>You received this because your portfolio matched identified signals. To unsubscribe, update your alert preferences.</p>
+</div>
+
+</body>
+</html>
