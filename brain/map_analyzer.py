@@ -21,9 +21,7 @@ class Opportunity(BaseModel):
     model_config = ConfigDict(extra="ignore")
     type: str = Field(default="")
     description: str = Field(default="")
-    location: str = Field(default="")
-    parcel_id: str = Field(default="")
-    monetary_value: str = Field(default="")
+    affected_sector: str = Field(default="")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
 
@@ -31,8 +29,7 @@ class Risk(BaseModel):
     model_config = ConfigDict(extra="ignore")
     type: str = Field(default="")
     description: str = Field(default="")
-    location: str = Field(default="")
-    affected_entity: str = Field(default="")
+    affected_sector: str = Field(default="")
     severity: Literal["LOW", "MED", "HIGH", ""] = Field(default="")
     confidence: float = Field(default=0.0, ge=0.0, le=1.0)
 
@@ -40,11 +37,14 @@ class Risk(BaseModel):
 class ChunkAnalysis(BaseModel):
     model_config = ConfigDict(extra="ignore")
     chunk_index: int
+    decision_type: Literal['KARAR', 'KANUN', 'YONETMELIK', 'TEBLIG', 'IHALE', 'OTHER', ''] = Field(default="")
+    court_or_authority: str = Field(default="")
+    legal_areas: List[str] = Field(default_factory=list)
+    affected_sectors: List[str] = Field(default_factory=list)
     opportunities: List[Opportunity] = Field(default_factory=list)
     risks: List[Risk] = Field(default_factory=list)
+    case_references: List[str] = Field(default_factory=list)
     key_entities: List[str] = Field(default_factory=list)
-    key_locations: List[str] = Field(default_factory=list)
-    document_type_confirmed: str = Field(default="")
     has_actionable_data: bool = Field(default=False)
     summary_tr: str = Field(default="")
     summary_en: str = Field(default="")

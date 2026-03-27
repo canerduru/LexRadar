@@ -14,7 +14,7 @@ from chromadb.config import Settings as ChromaSettings
 from brain.reduce_synthesizer import FinalReport
 from config.settings import Settings
 from memory.embedder import TextEmbedder
-from memory.schema import IntelligenceEntry, MatchResult, PortfolioItem, SearchResult
+from memory.schema import IntelligenceEntry, MatchResult, ClientWatchlist, SearchResult
 
 
 class ChromaMemory:
@@ -62,7 +62,13 @@ class ChromaMemory:
             opportunities=[opp.model_dump() for opp in report.opportunities],
             risks=[rsk.model_dump() for rsk in report.risks],
             source_url=report.source_url,
-            raw_json_path=""
+            raw_json_path="",
+            # Add new fields with sensible defaults or leave them empty if not provided logically yet
+            legal_area="",
+            affected_sectors=[],
+            case_references=[],
+            court_name=None,
+            decision_type="OTHER"
         )
 
         text = self._embedder.build_intelligence_text(entry)
@@ -82,9 +88,9 @@ class ChromaMemory:
             metadatas=[metadata]
         )
 
-    async def upsert_portfolio_item(self, item: PortfolioItem) -> None:
+    async def upsert_portfolio_item(self, item: ClientWatchlist) -> None:
         """
-        Adds or updates a portfolio entry.
+        Adds or updates a ClientWatchlist entry.
         """
         text = self._embedder.build_portfolio_text(item)
         embedding = await self._embedder.embed(text)
@@ -162,11 +168,11 @@ class ChromaMemory:
                     pass
         return model_cls.model_validate(clean_meta)
 
-    async def find_portfolio_matches_for_report(self, report: FinalReport) -> List[MatchResult]:
+    async def find_watchlist_matches_for_report(self, report: FinalReport) -> List[MatchResult]:
         """
         Smart matching: embed report's key details to query portfolio,
         and embed portfolio's watchlist_keywords to query intelligence.
-        Returns union of match sets above SIMILARITY_THRESHOLD.
+        Returns union of match sets above SIMILARITY_THRESHOLD or based on heuristics.
         """
         # Convert report to IntelligenceEntry
         entry = IntelligenceEntry(
@@ -178,81 +184,110 @@ class ChromaMemory:
             opportunities=[opp.model_dump() for opp in report.opportunities],
             risks=[rsk.model_dump() for rsk in report.risks],
             source_url=report.source_url,
-            raw_json_path=""
+            raw_json_path="",
+            # Use getattr to safely handle Pydantic fields that might be missing dynamically
+            legal_area=getattr(report, "legal_area", ""),
+            affected_sectors=getattr(report, "affected_sectors", []),
+            case_references=getattr(report, "case_references", []),
+            court_name=getattr(report, "court_or_authority", None),
+            decision_type=getattr(report, "decision_type", "OTHER")
         )
 
+        urgency_level = getattr(report, "urgency_level", "")
+        recommended_actions = getattr(report, "recommended_actions", [])
+        recommended_action = recommended_actions[0] if recommended_actions else ""
+
         all_matches: Dict[str, MatchResult] = {}
+        all_portfolios = await self.get_all_portfolio()
         
-        # 1. Report queries Portfolio
+        # Perform deterministic heuristic matching against all portfolios
+        for p_item in all_portfolios:
+            score = 0.0
+            match_type = 'SEMANTIC'
+            reasons = []
+
+            # 1. Exact Match: Case References (Highest Priority)
+            if p_item.case_references and hasattr(report, "case_references") and report.case_references:
+                for case_ref in p_item.case_references:
+                    if any(case_ref.lower() in rep_ref.lower() for rep_ref in report.case_references):
+                        score = 1.0
+                        match_type = 'CASE_REF'
+                        reasons.append(f"Exact case reference match: {case_ref}")
+
+            # 2. Key Entities overlap (Company name)
+            if score < 1.0 and hasattr(report, "key_entities") and report.key_entities:
+                if any(p_item.company_name.lower() in ent.lower() for ent in report.key_entities):
+                    score = max(score, 0.95)
+                    match_type = 'ENTITY'
+                    reasons.append(f"Company entity match: {p_item.company_name}")
+
+            # 3. Sector & Legal Area combined match
+            if score < 0.85:
+                sector_match = hasattr(report, "affected_sectors") and p_item.sector in report.affected_sectors
+                legal_match = hasattr(report, "legal_areas") and any(la in report.legal_areas for la in p_item.legal_areas)
+                if sector_match and legal_match:
+                    score = max(score, 0.85)
+                    match_type = 'LEGAL_AREA' if not score else match_type
+                    reasons.append(f"Sector ({p_item.sector}) and Legal Area ({', '.join(p_item.legal_areas)}) aligned.")
+                elif sector_match:
+                    reasons.append(f"Sector logic alignment: {p_item.sector}")
+                elif legal_match:
+                    reasons.append(f"Legal Area alignment")
+
+            # 4. Keyword Substring Match (as an ultimate fallback alongside vectors)
+            if score < self._settings.SIMILARITY_THRESHOLD:
+                if p_item.watchlist_keywords:
+                    # simplistic fallback test on the summaries
+                    for kw in p_item.watchlist_keywords:
+                        if kw.lower() in report.executive_summary_en.lower() or kw.lower() in report.executive_summary_tr.lower():
+                            score = max(score, self._settings.SIMILARITY_THRESHOLD + 0.05)
+                            match_type = 'KEYWORD'
+                            reasons.append(f"Keyword semantic match: {kw}")
+
+            if score >= self._settings.SIMILARITY_THRESHOLD:
+                match = MatchResult(
+                    portfolio_item=p_item,
+                    intelligence_entry=entry,
+                    similarity_score=score,
+                    match_reasons=reasons,
+                    match_type=match_type,
+                    urgency_level=urgency_level,
+                    recommended_action=recommended_action
+                )
+                all_matches[str(p_item.id)] = match
+
+        # 5. Semantic Query (for instances where heuristics fail but concepts align)
         locs = ", ".join(report.key_locations)
-        opps = ", ".join([o.description for o in report.opportunities])
-        risks = ", ".join([r.description for r in report.risks])
+        opps = ", ".join([o.description for o in getattr(report, "opportunities", [])])
+        risks = ", ".join([r.description for r in getattr(report, "risks", [])])
         query_text = f"Locations: {locs}. Opportunities: {opps}. Risks: {risks}"
         
         port_results = await self.query_portfolio(query_text, n=self._settings.TOP_K_MATCHES)
-        
         for res in port_results:
             if res.score >= self._settings.SIMILARITY_THRESHOLD:
-                portfolio_item = self._deserialize_metadata(res.metadata, PortfolioItem)
-                
-                # Determine match reasons heuristically
-                reasons = []
-                for loc in report.key_locations:
-                    if loc.lower() in portfolio_item.district.lower() or loc.lower() in portfolio_item.city.lower():
-                        reasons.append(f"Location overlap: {loc}")
-                for kw in portfolio_item.watchlist_keywords:
-                    if kw.lower() in query_text.lower():
-                        reasons.append(f"Keyword match: {kw}")
-                if not reasons:
-                    reasons.append("Semantic semantic overlap found in descriptions.")
-                
-                match = MatchResult(
-                    portfolio_item=portfolio_item,
-                    intelligence_entry=entry,
-                    similarity_score=res.score,
-                    match_reasons=reasons
-                )
-                all_matches[str(portfolio_item.id)] = match
-
-        # 2. Portfolio items query Intelligence
-        all_portfolios = await self.get_all_portfolio()
-        for p_item in all_portfolios:
-            if str(p_item.id) in all_matches:
-                continue # Already found a high-quality match
-                
-            if p_item.watchlist_keywords:
-                kw_query = ", ".join(p_item.watchlist_keywords)
-                # Embed keys and query intel
-                embedding = await self._embedder.embed(kw_query)
-                intel_results = self._intel_collection.query(
-                    query_embeddings=[embedding],
-                    n_results=self._settings.TOP_K_MATCHES
-                )
-                parsed_intel = self._parse_chroma_results(intel_results)
-                
-                for i_res in parsed_intel:
-                    if i_res.score >= self._settings.SIMILARITY_THRESHOLD and i_res.id == entry.id:
-                        reasons = [f"Watchlist keyword match: {kw}" for kw in p_item.watchlist_keywords if kw.lower() in i_res.document.lower()]
-                        if not reasons:
-                            reasons.append("Semantic keyword overlap found.")
-                            
-                        match = MatchResult(
-                            portfolio_item=p_item,
-                            intelligence_entry=entry,
-                            similarity_score=i_res.score,
-                            match_reasons=reasons
-                        )
-                        all_matches[str(p_item.id)] = match
+                pid = res.metadata.get("id")
+                if str(pid) not in all_matches:
+                    p_item = self._deserialize_metadata(res.metadata, ClientWatchlist)
+                    match = MatchResult(
+                        portfolio_item=p_item,
+                        intelligence_entry=entry,
+                        similarity_score=res.score,
+                        match_reasons=["Semantic overlap found in descriptions."],
+                        match_type='SEMANTIC',
+                        urgency_level=urgency_level,
+                        recommended_action=recommended_action
+                    )
+                    all_matches[str(p_item.id)] = match
 
         return list(all_matches.values())
 
-    async def get_all_portfolio(self) -> List[PortfolioItem]:
+    async def get_all_portfolio(self) -> List[ClientWatchlist]:
         results = self._portfolio_collection.get()
         items = []
         if "metadatas" in results and results["metadatas"]:
             for meta in results["metadatas"]:
                 if meta:
-                    items.append(self._deserialize_metadata(meta, PortfolioItem))
+                    items.append(self._deserialize_metadata(meta, ClientWatchlist))
         return items
 
     async def delete_portfolio_item(self, item_id: str) -> None:

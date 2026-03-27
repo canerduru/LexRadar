@@ -183,7 +183,7 @@ async def main() -> None:
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.add_log_level,
             structlog.processors.format_exc_info,
-            structlog.processors.ConsoleRenderer(),
+            structlog.dev.ConsoleRenderer(),
         ],
     )
 

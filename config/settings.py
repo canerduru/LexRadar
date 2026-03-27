@@ -9,6 +9,9 @@ from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+PROJECT_NAME: str = "Legal Intelligence Radar"
+
+
 class Settings(BaseSettings):
     """
     Application configuration.
@@ -68,22 +71,44 @@ class Settings(BaseSettings):
     MIN_SIMILARITY_FOR_ALERT: float = 0.75
 
     KEYWORDS: List[str] = [
-        "imar",
-        "kamulaştırma",
+        "dava",
+        "karar",
+        "temyiz",
+        "istinaf",
+        "yargıtay",
+        "danıştay",
+        "anayasa mahkemesi",
         "ihale",
-        "tapu",
-        "yapı ruhsatı",
-        "kıyı kanunu",
-        "mera",
-        "orman",
-        "gayrimenkul",
-        "arazi",
-        "expropriation",
-        "tender",
-        "zoning",
-        "real estate",
-        "land registry",
+        "rekabet",
+        "mevzuat",
+        "yönetmelik",
+        "tebliğ",
+        "kanun",
+        "kvkk",
+        "bddk",
+        "spk",
+        "vergi",
+        "icra",
+        "iflas",
+        "tasfiye",
+        "birleşme",
+        "devralma",
+        "ceza",
+        "tazminat",
+        "itiraz",
+        "iptal",
+        "yürütmeyi durdurma",
+        "ihtiyati tedbir",
+        "kamulaştırma",
+        "imar",
+        "ruhsat",
+        "lisans",
+        "izin",
     ]
+
+    LEGAL_DOMAINS: List[str] = ["resmigazete", "yargitay", "danistay", "rekabet"]
+
+    CLIENT_SECTORS: List[str] = ["teknoloji", "finans", "insaat", "ilac", "enerji"]
 
 
 def get_settings() -> Settings:

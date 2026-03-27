@@ -11,7 +11,7 @@ import openai
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from config.settings import Settings
-from memory.schema import IntelligenceEntry, PortfolioItem
+from memory.schema import IntelligenceEntry, ClientWatchlist
 
 
 class TextEmbedder:
@@ -65,19 +65,20 @@ class TextEmbedder:
             all_embeddings.extend(chunk_embeddings)
         return all_embeddings
 
-    def build_portfolio_text(self, item: PortfolioItem) -> str:
+    def build_portfolio_text(self, item: ClientWatchlist) -> str:
         """
-        Builds the cohesive text representation of a PortfolioItem for embedding.
+        Builds the cohesive text representation of a ClientWatchlist for embedding.
         """
-        ada = item.ada_parsel if item.ada_parsel else "Bilinmiyor"
-        tags = ", ".join(item.tags) if item.tags else "Yok"
+        areas = ", ".join(item.legal_areas) if item.legal_areas else "Yok"
         keywords = ", ".join(item.watchlist_keywords) if item.watchlist_keywords else "Yok"
+        cases = ", ".join(item.case_references) if item.case_references else "Yok"
         
         text = (
-            f"{item.asset_type} in {item.district}, {item.city}. "
-            f"Ada/Parsel: {ada}. "
-            f"Tags: {tags}. "
+            f"Client: {item.client_name} ({item.company_name}). "
+            f"Sector: {item.sector}. "
+            f"Legal Areas: {areas}. "
             f"Keywords: {keywords}. "
+            f"Case References: {cases}. "
             f"Notes: {item.notes}"
         )
         return text
@@ -105,6 +106,8 @@ class TextEmbedder:
 
         text = (
             f"{entry.overall_signal}: {entry.executive_summary_en}. "
+            f"Decision Type: {entry.decision_type}. "
+            f"Legal Area: {entry.legal_area}. "
             f"Locations: {locs}. "
             f"Opportunities: {opps_str}. "
             f"Risks: {risks_str}"

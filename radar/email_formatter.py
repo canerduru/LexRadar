@@ -29,15 +29,12 @@ class AlertEmailFormatter:
         self.env = Environment(loader=FileSystemLoader("templates"))
 
     def format(self, match_results: List[MatchResult], report: FinalReport) -> EmailPayload:
-        # Subject matching template rule:
-        district_list = list(set([m.portfolio_item.district for m in match_results]))
-        districts_str = ", ".join(district_list) if district_list else "Unknown District"
-        
         signal_badge = report.overall_signal if report.overall_signal else "NEUTRAL"
-        doc_type = report.document_type if report.document_type else "Gazette"
+        legal_area = getattr(report, "legal_area", "Genel")
+        court = getattr(report, "court_or_authority", "Bilinmiyor")
         date_str = report.gazette_date if report.gazette_date else "Today"
         
-        subject = f"🚨 [{signal_badge}] {districts_str} — {doc_type} | Radar Alert {date_str}"
+        subject = f"⚖️ [{signal_badge}] {legal_area} — {court} | Legal Radar {date_str}"
 
         # Group matches by client
         matched_groups: Dict[str, List[MatchResult]] = {}
@@ -53,14 +50,23 @@ class AlertEmailFormatter:
             matched_groups=matched_groups
         )
 
-        # Fallback raw text parsing roughly matching HTML outline
-        text_body = f"Radar Alert - {signal_badge}\nDate: {date_str}\n" \
-                    f"Summary: {report.executive_summary_en}\n\nMatched Items:\n"
-                    
+        # Fallback raw text parsing representing the 9 sections
+        text_body = "1. Legal Intelligence Radar — Hukuki Uyarı\n\n"
+        text_body += f"2. Tür: {getattr(report, 'decision_type', 'OTHER')}\n\n"
+        text_body += f"3. Özet (TR): {report.executive_summary_tr}\n"
+        text_body += f"   Özet (EN): {report.executive_summary_en}\n\n"
+        text_body += f"4. Etkilenen Hukuki Alanlar: {', '.join(getattr(report, 'legal_areas', []))}\n"
+        text_body += f"5. Etkilenen Sektörler: {', '.join(getattr(report, 'affected_sectors', []))}\n\n"
+        text_body += "6. Matched Client Watchlist:\n"
+        
         for client, items in matched_groups.items():
-            text_body += f"\nClient: {client}\n"
+            text_body += f"   - {client}\n"
             for match in items:
-                text_body += f" - {match.portfolio_item.asset_type} | {match.portfolio_item.address} (Sim: {match.similarity_score:.2f})\n"
+                text_body += f"     > {match.portfolio_item.company_name} (Uyumluluk: {match.similarity_score:.2f})\n"
+                
+        text_body += f"\n7. Önerilen Aksiyonlar: {', '.join(report.recommended_actions)}\n"
+        text_body += f"8. Aciliyet Seviyesi: {getattr(report, 'urgency_level', 'LOW')}\n"
+        text_body += f"9. Kaynak: {report.source_url}\n"
 
         return EmailPayload(
             subject=subject,

@@ -1,238 +1,106 @@
-# 🏙️ LandIntel — Türkiye Gayrimenkul İstihbarat Radarı
+# LexRadar (Legal Intelligence Radar) ⚖️
 
-> Resmi Gazete'yi her gün otomatik tarayarak kamulaştırma, özelleştirme ve imar kararlarını yakalayan, GPT-4 ile analiz eden ve portföy eşleşmesi halinde uyarı gönderen AI destekli bir gayrimenkul istihbarat sistemi.
+*LexRadar*, resmi makamların yayımladığı kararları, mevzuat değişikliklerini ve ihaleleri otomatik olarak takip eden, yapay zeka destekli kurumsal düzeyde bir **Hukuki İstihbarat Radarıdır**.
 
----
-
-## 🎯 Ne Yapar?
-
-Türkiye'de her gün Resmi Gazete'de yüzlerce hukuki karar yayınlanır:
-- Arazi **kamulaştırmaları**
-- Hazine taşınmazı **özelleştirmeleri**
-- **İmar** değişiklikleri
-- Taşınmaz **ihale** kararları
-
-Bu kararları takip etmek büyük fırsat/risk sinyalleridir ama elle takip etmek imkânsızdır.
-
-**LandIntel** bu süreci tamamen otomatize eder:
-
-```
-Resmi Gazete → PDF İndir → LlamaParse → Gemini (Map) → GPT-4o (Reduce) → Intelligence Report → Portföy Eşleşmesi → E-mail/WhatsApp Uyarısı
-```
+*LexRadar is an AI-powered, enterprise-grade **Legal Intelligence Radar** that automatically tracks decisions, regulatory changes, and public tenders published by official authorities.*
 
 ---
 
-## 🏗️ Mimari
+## 🇹🇷 Türkçe (Turkish)
 
-```
-LandIntel/
-├── hunter/          # Resmi Gazete scraper + PDF downloader
-├── parser/          # LlamaParse PDF → Markdown/JSON dönüştürücü
-├── brain/           # Map-Reduce AI analiz motoru
-│   ├── map_analyzer.py      # Gemini Flash (chunk analizi)
-│   ├── reduce_synthesizer.py # GPT-4o-mini (final rapor)
-│   └── prompts.py           # AI prompt şablonları
-├── memory/          # ChromaDB vektör hafızası + portföy yönetimi
-├── radar/           # Orchestrator, scheduler, alert engine, dashboard
-├── config/          # Merkezi ayarlar (pydantic-settings)
-├── templates/       # E-mail HTML şablonları
-├── data/            # Runtime veri klasörleri (gitignore'da)
-│   ├── raw_pdfs/
-│   ├── parsed_markdown/
-│   ├── parsed_json/
-│   ├── intelligence_reports/
-│   └── chroma_db/
-└── main.py          # Tek giriş noktası (CLI)
-```
+### 📌 Proje Hakkında
+LexRadar, şirketlerin ve hukuk bürolarının, kendi sektörlerini ve "İzleme Listelerindeki" (Watchlist) müvekkillerini doğrudan ilgilendiren yasal gelişmeleri anında yakalamasını sağlar. Her gün **T.C. Resmi Gazete**'yi tarayıp, PDF belgelerini indirir ve **LlamaParse**, **Google Gemini**, ve **OpenAI GPT-4o-mini** altyapılarıyla hukuki bir bağlamda analiz ederek karar, kanun, ihale ve risk analizlerini özetleyip WhatsApp ve E-posta yoluyla otomatik bildirimler gönderir.
 
----
+### 🏗️ Nasıl Çalışır?
+Sistem 5 ana aşamadan (Pipeline) oluşur:
 
-## ⚙️ Nasıl Çalışır?
+1. **Hunter (Avcı):** Seçili yasal kelime grubuna göre (`dava`, `rekabet`, `kvkk` vb.) o günkü Resmi Gazete'yi tarar. İlgili belgelerin PDF hallerini bulup indirir.
+2. **Parser (Çözümleyici):** `LlamaParse` yardımı ile karmaşık yapılı hukuki PDF belgelerini kusursuzca metne (Markdown/JSON) çevirir.
+3. **Brain (Yapay Zeka - Map/Reduce):**
+    - **Map:** Google Gemini her parçayı okuyarak "Türk Hukuk İstihbarat Analisti" edasıyla bilgileri ayrıştırır, sektörleri ve riskleri (`LOW`, `MED`, `HIGH`) tespit eder.
+    - **Reduce:** OpenAI GPT-4o-mini devreye girip bir "Başhukuk Müşaviri" perspektifinden tüm bulguları tek bir `FinalReport` json belgesinde birleştirir.
+4. **Memory (Hafıza - ChromaDB):** Analiz sonuçları Vektör veritabanına eklenir. `ClientWatchlist` (Müvekkil İzleme Listesi) üzerinden şirketler veya sektörler ile eşleşmeler aranır (Dava numarasından veya şirket unvanından %100 eşleşme gibi ağırlıklandırılmış sistem).
+5. **Radar (Bildirim):** Eşleşen önemli hukuki olaylar, **Aciliyet Seviyesi** ve **Önerilen Eylem** planıyla beraber WhatsApp/E-posta şablonlarına oturtulup ilgili sorumlulara gönderilir.
 
-### 1️⃣ Hunter — Resmi Gazete Tarayıcı
+### 🚀 Karşılaştırma Mantığı (Heuristic Matching)
+Bağlam eşleştirme sırası şu şekildedir:
+- Öncelik 1: Tam dava numarası eşleşmesi (`score: 1.0`)
+- Öncelik 2: Müvekkil/Şirket unvanı eşleşmesi (`score: 0.95`)
+- Öncelik 3: Hukuki alan ve sektörün birleşimi (`score: 0.85`)
+- Öncelik 4: İzleme listesindeki anahtar kelimelerin anlamsal (vektörel) eşleşmesi.
 
-`hunter/gazette_hunter.py`
-
-- `https://www.resmigazete.gov.tr` sitesini `httpx` + `BeautifulSoup` ile tarar
-- PDF linklerini bulur
-- Başlıkları keyword listesiyle filtreler (`taşınmaz`, `kamulaştırma`, `ihale`, `özelleştirme`...)
-- Eşleşen PDF'leri `data/raw_pdfs/` klasörüne indirir
-- İdempotent: aynı PDF ikinci kez indirilmez (`data/download_queue.json`)
-
-### 2️⃣ Parser — PDF → Yapılandırılmış Veri
-
-`parser/pdf_parser.py`
-
-- LlamaParse API ile Türkçe PDF'leri OCR + yapısal metin olarak çözer
-- Tablolar (taşınmaz listeleri, parsel numaraları) korunur
-- `data/parsed_markdown/` → ham metin
-- `data/parsed_json/` → çunk'lanmış, metadata eklenmiş JSON
-
-### 3️⃣ Brain — Map-Reduce AI Analiz
-
-`brain/intelligence_engine.py`
-
-**MAP Aşaması (Gemini 2.0 Flash):**
-Her chunk ayrı ayrı analiz edilir:
-- İşlem türü (kamulaştırma / özelleştirme / ihale)
-- Etkilenen ilçe/mahalle
-- Parsel numaraları
-- Parasal değerler
-- Fırsat/risk skoru
-
-**REDUCE Aşaması (GPT-4o-mini):**
-Tüm chunk analizleri birleştirilir, tek bir yapılandırılmış `Intelligence Report` üretilir → `data/intelligence_reports/*.json`
-
-### 4️⃣ Memory — Vektör Hafızası
-
-`memory/vector_store.py`
-
-- ChromaDB kullanır
-- Intelligence raporlar ve portföy kayıtları `text-embedding-3-small` ile vektörleştirilir
-- Anlamsal benzerlik araması ile "bu karar müşterimle ilgili mi?" sorusu cevaplanır
-
-### 5️⃣ Radar — Portföy Eşleşmesi + Uyarı
-
-`radar/alert_engine.py`
-
-- Yeni rapor, B2B portföyündeki kayıtlarla karşılaştırılır (cosine similarity > 0.75)
-- Eşleşme bulunursa e-mail (SMTP) ve/veya WhatsApp (Twilio) uyarısı gönderilir
-
----
-
-## 🚀 Kurulum
-
-### Gereksinimler
-- Python 3.11+
-- API Anahtarları: LlamaParse, OpenAI, Google AI Studio
-
-### 1. Sanal ortam oluştur
+### ⚙️ Kurulum ve Çalıştırma
 ```bash
+# Sanal ortamı aktif edin
 python3.11 -m venv .venv311
 source .venv311/bin/activate
+
+# Gereksinimleri yükleyin
 pip install -r requirements.txt
 ```
 
-### 2. `.env` dosyasını oluştur
-```bash
-cp .env.example .env
-```
-
-`.env` dosyasını düzenle:
+**.env** dosyasını oluşturun ve API Anahtarlarını girin:
 ```env
-LLAMA_CLOUD_API_KEY=llx-...
-OPENAI_API_KEY=sk-...
-GOOGLE_API_KEY=AIza...
-MAP_MODEL=models/gemini-2.0-flash
-REDUCE_MODEL=gpt-4o-mini
+LLAMA_CLOUD_API_KEY="your_key"
+GOOGLE_API_KEY="your_key"
+OPENAI_API_KEY="your_key"
+# (Opsiyonel: Twilio / E-posta SMPT Ayarları)
+```
+
+**Sistemi Test Etmek:**
+```bash
+# Son 2 günü taramak için (Test formatında)
+python main.py run-now --days-back 2
 ```
 
 ---
 
-## 🖥️ Kullanım
+## 🇬🇧 English
 
-### Tek seferlik çalıştır
+### 📌 About the Project
+LexRadar enables companies and law firms to instantly capture legal developments that directly affect their sectors and specific clients on their "Watchlists". Scanning the **Turkish Official Gazette** daily, LexRadar downloads PDFs and processes them through an AI pipeline using **LlamaParse**, **Google Gemini**, and **OpenAI GPT-4o-mini**. It curates actionable legal intelligence reports and distributes tailored email/WhatsApp alerts.
+
+### 🏗️ How it Works
+The system follows a 5-stage pipeline:
+
+1. **Hunter:** Scans the daily Official Gazette against targeted legal keywords (e.g., `litigation`, `competition`, `kvkk`) and queues relevant PDFs for download.
+2. **Parser:** Utilizes `LlamaParse` to transform visually complex court/legal PDF documents into highly accurate machine-readable markdown and JSON data.
+3. **Brain (AI Engine - Map/Reduce):**
+    - **Map:** Google Gemini acts as an Intelligence Analyst, determining the decision type, affected sectors, key entities, and stratifying legal risks (`LOW`, `MED`, `HIGH`).
+    - **Reduce:** OpenAI's GPT-4o-mini acts as Senior Legal Counsel to synthesize all analyzed chunks into an authoritative single JSON intelligence report.
+4. **Memory (ChromaDB + Heuristics):** Analyzed documents are embedded into a local Vector DB. The engine filters matches against the `ClientWatchlist` to check for relevant criteria such as case numbers, tracking keywords, and sectors.
+5. **Radar (Notification Engine):** Generates robust alerts identifying the `match_type` and `urgency_level`, alongside recommended legal actions, and dispatches them automatically over WhatsApp/Email.
+
+### 🚀 Matching Algorithm
+When looking for watchlist matches, the engine scores as follows:
+- Priority 1: Exact case reference match (`score: 1.0`)
+- Priority 2: Direct Company/Client entity match (`score: 0.95`)
+- Priority 3: Combined Legal Area + Sector intersection (`score: 0.85`)
+- Priority 4: Semantic similarity on watchlist keywords.
+
+### ⚙️ Installation & Usage
 ```bash
-python main.py run-now --days-back 1
+# Create and activate local environment
+python3.11 -m venv .venv311
+source .venv311/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### Sadece Hunter'ı test et (API maliyeti yok)
-```bash
-python -m hunter.gazette_hunter --days-back 3
-```
-
-### Durumu göster
-```bash
-python main.py dashboard
-```
-
-### Portföy yükle
-```bash
-python main.py add-portfolio -i data/portfolio_seed.json
-```
-
-### 7/24 Otomatik (her sabah 07:00 İstanbul)
-```bash
-python main.py start
-```
-
----
-
-## 📁 Veri Yapısı
-
-### Intelligence Report (`data/intelligence_reports/*.json`)
-```json
-{
-  "gazette_date": "2026-03-27",
-  "document_type": "Kamulaştırma Kararı",
-  "summary_tr": "Kuşadası-Söke içmesuyu projesi kapsamında...",
-  "opportunities": [...],
-  "risks": [...],
-  "key_locations": ["Aydın", "Kuşadası"],
-  "confidence_score": 0.92
-}
-```
-
-### Portföy Kaydı (`data/portfolio_seed.json`)
-```json
-[
-  {
-    "client_name": "Örnek A.Ş.",
-    "location": "İzmir, Kuşadası",
-    "property_type": "Arsa",
-    "notes": "Kıyıya yakın, kamulaştırma riski takip ediliyor"
-  }
-]
-```
-
----
-
-## 🔑 Gerekli API Anahtarları
-
-| Servis | Kullanım | Nereden Alınır |
-|--------|----------|----------------|
-| **LlamaParse** | PDF → Metin | [cloud.llamaindex.ai](https://cloud.llamaindex.ai) |
-| **OpenAI** | Reduce + Embedding | [platform.openai.com](https://platform.openai.com) |
-| **Google AI Studio** | Map (Gemini) | [aistudio.google.com](https://aistudio.google.com) |
-| **Twilio** *(opsiyonel)* | WhatsApp uyarısı | [twilio.com](https://twilio.com) |
-| **SMTP** *(opsiyonel)* | E-mail uyarısı | Gmail App Password vb. |
-
----
-
-## 🗓️ Scheduler Ayarları (`.env`)
-
+Create a **.env** file modeled on `.env.example` and plug in your keys:
 ```env
-SCHEDULE_HOUR=7              # Sabah 07:00'de çalış
-SCHEDULE_TIMEZONE=Europe/Istanbul
+LLAMA_CLOUD_API_KEY="your_key"
+GOOGLE_API_KEY="your_key"
+OPENAI_API_KEY="your_key"
+# (Optional: Twilio / Email SMTP Settings)
+```
+
+**Running the System:**
+```bash
+# Scrape and analyze the last 2 days of the Official Gazette immediately
+python main.py run-now --days-back 2
 ```
 
 ---
-
-## 📊 Keyword Listesi
-
-Varsayılan olarak şu anahtar kelimeler aranır:
-
-```
-imar, kamulaştırma, ihale, tapu, taşınmaz, özelleştirme,
-istimlak, kentsel dönüşüm, yapı denetim, ruhsat, parsel,
-kadastro, gayrimenkul, arazi, mera, orman, kıyı kanunu
-```
-
-`.env` dosyasından özelleştirilebilir:
-```env
-KEYWORDS='["imar","kamulaştırma","taşınmaz"]'
-```
-
----
-
-## ⚠️ Önemli Notlar
-
-- `.env` dosyası **asla** Git'e gönderilmemelidir (`.gitignore`'da belirtilmiştir)
-- Gemini ücretsiz katmanı günlük ~100 istek ile sınırlıdır
-- Production için bir VPS'de `python main.py start` + `tmux` ya da `systemd` önerilir
-
----
-
-## 📄 Lisans
-
-MIT
+*Architecture based on the original intelligence pipeline; highly customized for Legal AI Operations.*

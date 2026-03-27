@@ -28,10 +28,13 @@ class FinalReport(BaseModel):
     executive_summary_tr: str = Field(default="")
     opportunities: List[Opportunity] = Field(default_factory=list)
     risks: List[Risk] = Field(default_factory=list)
-    key_locations: List[str] = Field(default_factory=list)
+    decision_type: str = Field(default="")
+    court_or_authority: str = Field(default="")
+    legal_areas: List[str] = Field(default_factory=list)
+    affected_sectors: List[str] = Field(default_factory=list)
+    case_references: List[str] = Field(default_factory=list)
     key_entities: List[str] = Field(default_factory=list)
-    land_parcels: List[str] = Field(default_factory=list)
-    total_monetary_exposure_try: float = Field(default=0.0)
+    urgency_level: Literal["LOW", "MEDIUM", "HIGH", "CRITICAL", ""] = Field(default="")
     action_required: bool = Field(default=False)
     recommended_actions: List[str] = Field(default_factory=list)
     source_url: str = Field(default="")
@@ -120,9 +123,12 @@ class ReportReduceSynthesizer:
                     chunk_index=i // batch_size + 1,
                     opportunities=intermediate_report.opportunities,
                     risks=intermediate_report.risks,
+                    decision_type=getattr(intermediate_report, "decision_type", ""),
+                    court_or_authority=getattr(intermediate_report, "court_or_authority", ""),
+                    legal_areas=getattr(intermediate_report, "legal_areas", []),
+                    affected_sectors=getattr(intermediate_report, "affected_sectors", []),
+                    case_references=getattr(intermediate_report, "case_references", []),
                     key_entities=intermediate_report.key_entities,
-                    key_locations=intermediate_report.key_locations,
-                    document_type_confirmed=intermediate_report.document_type,
                     has_actionable_data=intermediate_report.action_required,
                     summary_tr=intermediate_report.executive_summary_tr,
                     summary_en=intermediate_report.executive_summary_en,

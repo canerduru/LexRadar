@@ -11,21 +11,18 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class PortfolioItem(BaseModel):
+class ClientWatchlist(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: UUID
     client_name: str
-    asset_type: Literal["ARSA", "BINA", "TARLA", "BAHÇE", "DEPO", "OFİS", "PROJE"]
-    district: str
-    city: str
-    ada_parsel: Optional[str] = None
-    address: str
-    area_sqm: float
-    current_value_try: float
-    tags: List[str] = Field(default_factory=list)
+    company_name: str
+    sector: Literal['TEKNOLOJI', 'FINANS', 'INSAAT', 'ILAC', 'ENERJI', 'DIGER']
+    legal_areas: List[Literal['REKABET', 'VERGI', 'IS_HUKUKU', 'KVKK', 'IHALE', 'SIRKETLER', 'CEZA', 'IDARE']]
+    case_references: List[str] = Field(default_factory=list)
+    watchlist_keywords: List[str] = Field(default_factory=list)
+    alert_threshold: float = 0.75
     notes: str = ""
     created_at: datetime
-    watchlist_keywords: List[str] = Field(default_factory=list)
 
 
 class IntelligenceEntry(BaseModel):
@@ -39,6 +36,11 @@ class IntelligenceEntry(BaseModel):
     risks: List[dict] = Field(default_factory=list)
     source_url: str = ""
     raw_json_path: str = ""
+    legal_area: str = ""
+    affected_sectors: List[str] = Field(default_factory=list)
+    case_references: List[str] = Field(default_factory=list)
+    court_name: Optional[str] = None
+    decision_type: Literal['KARAR', 'KANUN', 'YONETMELIK', 'TEBLIG', 'IHALE', 'OTHER'] = 'OTHER'
 
 
 class SearchResult(BaseModel):
@@ -51,7 +53,10 @@ class SearchResult(BaseModel):
 
 class MatchResult(BaseModel):
     model_config = ConfigDict(extra="ignore")
-    portfolio_item: PortfolioItem
+    portfolio_item: ClientWatchlist
     intelligence_entry: IntelligenceEntry
     similarity_score: float
     match_reasons: List[str] = Field(default_factory=list)
+    match_type: Literal['KEYWORD', 'SECTOR', 'LEGAL_AREA', 'CASE_REF', 'ENTITY', 'SEMANTIC'] = 'SEMANTIC'
+    urgency_level: str = ""
+    recommended_action: str = ""

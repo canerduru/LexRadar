@@ -1,67 +1,97 @@
 [
   {
-    "client_name": "Koç Holding",
-    "asset_type": "ARSA",
-    "district": "Kadıköy",
-    "city": "İstanbul",
-    "ada_parsel": "125/34",
-    "address": "Fikirtepe Mah. Hızırbey Cad.",
-    "area_sqm": 5400.5,
-    "current_value_try": 150000000.0,
-    "tags": ["kentsel dönüşüm", "imar beklentisi"],
-    "notes": "Köşe parsel, yüksek emsal bekleniyor.",
-    "watchlist_keywords": ["kentsel dönüşüm", "imar", "plan tadilatı", "kadıköy"]
+    "client_name": "ABC Teknoloji A.Ş.",
+    "company_name": "ABC Teknoloji",
+    "sector": "TEKNOLOJI",
+    "legal_areas": [
+      "KVKK",
+      "REKABET",
+      "SIRKETLER"
+    ],
+    "case_references": [],
+    "watchlist_keywords": [
+      "kişisel veri",
+      "veri ihlali",
+      "rekabet ihlali",
+      "yazılım lisans"
+    ],
+    "notes": "KVKK uyum süreci devam ediyor"
   },
   {
-    "client_name": "Sabancı Holding",
-    "asset_type": "BİNA",
-    "district": "Levent",
-    "city": "İstanbul",
-    "ada_parsel": "45/1",
-    "address": "Büyükdere Cad. No:99",
-    "area_sqm": 12000.0,
-    "current_value_try": 450000000.0,
-    "tags": ["ticari", "prestij"],
-    "notes": "Şirket genel merkezi, metroya yakın.",
-    "watchlist_keywords": ["levent", "büyükdere", "ticari imar", "metro"]
+    "client_name": "XYZ İnşaat Holding",
+    "company_name": "XYZ Holding",
+    "sector": "INSAAT",
+    "legal_areas": [
+      "IHALE",
+      "IDARE",
+      "VERGI"
+    ],
+    "case_references": [
+      "2024/1234"
+    ],
+    "watchlist_keywords": [
+      "kamu ihalesi",
+      "ihale iptali",
+      "yapı ruhsatı",
+      "kamulaştırma"
+    ],
+    "notes": "Aktif ihale süreçleri mevcut"
   },
   {
-    "client_name": "Eczacıbaşı",
-    "asset_type": "TARLA",
-    "district": "Çeşme",
-    "city": "İzmir",
-    "ada_parsel": "80/5",
-    "address": "Ovacık Köyü Yolu Üzeri",
-    "area_sqm": 25000.0,
-    "current_value_try": 75000000.0,
-    "tags": ["turizm", "yatırım"],
-    "notes": "Turizm imarı bekleniyor, denize sıfır.",
-    "watchlist_keywords": ["çeşme", "turizm imarı", "kıyı kanunu"]
+    "client_name": "DEF Enerji A.Ş.",
+    "company_name": "DEF Enerji",
+    "sector": "ENERJI",
+    "legal_areas": [
+      "IDARE",
+      "REKABET",
+      "IHALE"
+    ],
+    "case_references": [],
+    "watchlist_keywords": [
+      "enerji lisansı",
+      "EPDK",
+      "doğalgaz",
+      "elektrik tarifeleri"
+    ],
+    "notes": "Lisans yenileme sürecinde"
   },
   {
-    "client_name": "Zorlu Holding",
-    "asset_type": "PROJE",
-    "district": "Çankaya",
-    "city": "Ankara",
-    "ada_parsel": "210/12",
-    "address": "Turan Güneş Bulvarı",
-    "area_sqm": 8500.0,
-    "current_value_try": 220000000.0,
-    "tags": ["karma kullanım", "avm"],
-    "notes": "Karma proje geliştirilecek alan.",
-    "watchlist_keywords": ["çankaya", "avm", "yapı ruhsatı", "karma"]
+    "client_name": "GHI Finans A.Ş.",
+    "company_name": "GHI Finans",
+    "sector": "FINANS",
+    "legal_areas": [
+      "BDDK",
+      "SPK",
+      "VERGI",
+      "SIRKETLER"
+    ],
+    "case_references": [],
+    "watchlist_keywords": [
+      "sermaye yeterliliği",
+      "faiz düzenlemesi",
+      "SPK kararı",
+      "BDDK"
+    ],
+    "notes": "Düzenleyici uyum takibi"
   },
   {
-    "client_name": "Rönesans Holding",
-    "asset_type": "DEPO",
-    "district": "Gebze",
-    "city": "Kocaeli",
-    "ada_parsel": "350/8",
-    "address": "OSB İçi, 5. Cadde",
-    "area_sqm": 40000.0,
-    "current_value_try": 310000000.0,
-    "tags": ["lojistik", "sanayi"],
-    "notes": "Lojistik üssü, stratejik konum.",
-    "watchlist_keywords": ["gebze", "organize sanayi", "kamulaştırma", "lojistik"]
+    "client_name": "JKL İlaç San. A.Ş.",
+    "company_name": "JKL İlaç",
+    "sector": "ILAC",
+    "legal_areas": [
+      "IDARE",
+      "REKABET",
+      "VERGI"
+    ],
+    "case_references": [
+      "2025/5678"
+    ],
+    "watchlist_keywords": [
+      "ilaç ruhsatı",
+      "SGK geri ödeme",
+      "fiyat kararnamesi",
+      "biyoeşdeğer"
+    ],
+    "notes": "SGK fiyat itirazı devam ediyor"
   }
 ]

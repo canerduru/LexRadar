@@ -35,14 +35,21 @@ class WhatsAppNotifier:
         port_item = match_result.portfolio_item
         
         # Build the structured message
+        legal_areas = ", ".join(getattr(report, 'legal_areas', []))
+        decision_type = getattr(report, 'decision_type', 'OTHER')
+        court = getattr(report, 'court_or_authority', 'Bilinmiyor')
+        urgency = getattr(match_result, 'urgency_level', '') or getattr(report, 'urgency_level', 'LOW')
+        action = getattr(match_result, 'recommended_action', '') or (report.recommended_actions[0] if report.recommended_actions else '')
+        
         message_body = (
-            f"🏗️ *RADAR ALERT*\n"
-            f"📍 *{report.overall_signal}* — {port_item.district}\n"
-            f"📋 {report.executive_summary_en}\n\n"
-            f"🎯 *Matched Asset:* {port_item.client_name} — {port_item.address}\n"
-            f"📊 *Confidence:* {score:.0%}\n"
-            f"💡 *Why:* {reasons}\n\n"
-            f"🔗 Source: {report.source_url}"
+            f"⚖️ *LEGAL RADAR ALERT*\n"
+            f"📋 *{decision_type}* — {court}\n"
+            f"🏛️ Hukuki Alan: {legal_areas}\n"
+            f"📊 {report.executive_summary_tr}\n\n"
+            f"🎯 *Müşteri:* {port_item.client_name} — {port_item.company_name}\n"
+            f"⚡ *Aciliyet:* {urgency}\n"
+            f"💡 *Aksiyon:* {action}\n\n"
+            f"🔗 Kaynak: {report.source_url}"
         )
         
         # Keep under 1600 characters max limit of Twilio Whatsapp text chunk.
