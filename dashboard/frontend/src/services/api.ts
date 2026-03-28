@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const BASE_URL = (import.meta as any).env?.VITE_API_URL || '';
 
 const api: AxiosInstance = axios.create({
     baseURL: BASE_URL,
@@ -31,7 +31,7 @@ api.interceptors.response.use(
 // ── Auth ────────────────────────────────────────────────────
 export const login = async (username: string, password: string): Promise<string> => {
     const form = new URLSearchParams({ username, password });
-    const res = await axios.post(`${BASE_URL}/api/auth/login`, form, {
+    const res = await api.post('/api/auth/login', form, {
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     });
     return res.data.access_token as string;

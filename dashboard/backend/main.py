@@ -31,7 +31,6 @@ from fastapi import Depends, FastAPI, HTTPException, Query, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 from pydantic import BaseModel, Field
 
 # ---------------------------------------------------------------------------
@@ -48,24 +47,19 @@ SECRET_KEY = os.getenv("JWT_SECRET_KEY", "lexradar-super-secret-dev-key-change-i
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "480"))  # 8 h
 
-# Single admin user (env-configurable; replace with DB user lookup in prod)
+# Single admin user — set DASHBOARD_EMAIL and DASHBOARD_PASSWORD in .env for production
 ADMIN_EMAIL = os.getenv("DASHBOARD_EMAIL", "admin@lexradar.com")
-ADMIN_PASSWORD_HASH = os.getenv(
-    "DASHBOARD_PASSWORD_HASH",
-    # Bcrypt hash of "lexradar2026" — change in production
-    "$2b$12$KIXvKFpVpD7kV3wQq.8RvuU4VtjjNM4Y1nMJ9MrzQ5fJuoZ7GYyxm",
-)
+ADMIN_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "lexradar2024")
 
 # ---------------------------------------------------------------------------
 # Auth helpers
 # ---------------------------------------------------------------------------
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
-def _verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+def _verify_password(plain: str) -> bool:
+    return plain == ADMIN_PASSWORD
 
 
 def _create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -279,7 +273,7 @@ app.add_middleware(
 @app.post("/api/auth/login", response_model=TokenResponse, tags=["Auth"])
 async def login(form: OAuth2PasswordRequestForm = Depends()) -> TokenResponse:
     """Password login — returns JWT access token."""
-    if form.username != ADMIN_EMAIL or not _verify_password(form.password, ADMIN_PASSWORD_HASH):
+    if form.username != ADMIN_EMAIL or not _verify_password(form.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
