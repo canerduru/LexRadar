@@ -22,3 +22,10 @@ jinja2
 apscheduler
 rich
 click
+
+# Dashboard Backend
+fastapi[standard]
+uvicorn[standard]
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
