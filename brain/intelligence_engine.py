@@ -124,6 +124,8 @@ class IntelligenceEngine:
             final_report.gazette_date = metadata["tarih"]
         if not final_report.source_url and "source_url" in metadata:
             final_report.source_url = metadata["source_url"]
+        if "source" in metadata:
+            final_report.source = metadata["source"]
 
         # 3. SAVE REPORT
         output_path = os.path.join(self._settings.INTELLIGENCE_REPORTS_DIR, f"{doc_id}.json")

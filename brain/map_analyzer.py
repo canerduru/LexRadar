@@ -37,7 +37,7 @@ class Risk(BaseModel):
 class ChunkAnalysis(BaseModel):
     model_config = ConfigDict(extra="ignore")
     chunk_index: int
-    decision_type: Literal['KARAR', 'KANUN', 'YONETMELIK', 'TEBLIG', 'IHALE', 'OTHER', ''] = Field(default="")
+    decision_type: Literal['KARAR', 'KANUN', 'YONETMELIK', 'TEBLIG', 'IHALE', 'YARGITAY_KARARI', 'DANISTAY_KARARI', 'KIK_KARARI', 'OTHER', ''] = Field(default="")
     court_or_authority: str = Field(default="")
     legal_areas: List[str] = Field(default_factory=list)
     affected_sectors: List[str] = Field(default_factory=list)
@@ -89,7 +89,10 @@ class ChunkMapAnalyzer:
 
         self._logger.info(f"🗺️ Mapping chunk {chunk_index}/{total_chunks} for {doc_id}")
 
+        source_name = doc_metadata.get("source", "UNKNOWN")
+
         prompt = MAP_USER_PROMPT.format(
+            source=source_name,
             chunk_index=chunk_index,
             total_chunks=total_chunks,
             doc_id=doc_id,

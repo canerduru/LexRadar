@@ -6,14 +6,16 @@ from __future__ import annotations
 
 MAP_SYSTEM_PROMPT = """You are a Turkish legal intelligence analyst specializing in corporate law, regulatory changes, and court decisions. Analyze ONLY the provided text chunk. Output ONLY valid JSON."""
 
-MAP_USER_PROMPT = """Given this chunk ({chunk_index}/{total_chunks}) from gazette document {doc_id}:
+MAP_USER_PROMPT = """Given this chunk ({chunk_index}/{total_chunks}) from document {doc_id}:
+This document is from source: {source} 
+(GAZETTE=Resmi Gazete, YARGITAY=Court of Cassation, DANISTAY=Council of State, KIK=Public Procurement Authority)
 ---
 {chunk_text}
 ---
 Extract and return JSON:
 {{
   "chunk_index": {chunk_index},
-  "decision_type": "KARAR|KANUN|YONETMELIK|TEBLIG|IHALE|OTHER",
+  "decision_type": "KARAR|KANUN|YONETMELIK|TEBLIG|IHALE|YARGITAY_KARARI|DANISTAY_KARARI|KIK_KARARI|OTHER",
   "court_or_authority": "str",
   "legal_areas": ["REKABET|VERGI|IS_HUKUKU|KVKK|IHALE|SIRKETLER|CEZA|IDARE"],
   "affected_sectors": ["str"],
@@ -26,7 +28,8 @@ Extract and return JSON:
   "summary_en": "str"
 }}"""
 
-REDUCE_SYSTEM_PROMPT = """You are a senior Turkish legal counsel. Synthesize chunk analyses into one authoritative legal intelligence report. Focus on actionable insights for corporate clients."""
+REDUCE_SYSTEM_PROMPT = """You are a senior Turkish legal counsel. Synthesize chunk analyses into one authoritative legal intelligence report. Focus on actionable insights for corporate clients.
+If multiple chunks reference the same legal matter from different sources (e.g. a Gazette announcement AND a Yargıtay decision), synthesize them as ONE unified finding with higher confidence score."""
 
 REDUCE_USER_PROMPT = """Synthesize these {n} chunk analyses for document {doc_id} into a final intelligence report JSON:
 {all_chunk_analyses}

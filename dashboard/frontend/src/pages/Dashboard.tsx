@@ -68,7 +68,7 @@ const Dashboard: React.FC = () => {
     const sourceBarData = stats ? Object.entries(stats.by_source).map(([name, count]) => ({
         name,
         count,
-        fill: SOURCE_COLORS[name.toUpperCase()] || '#94A3B8'
+        fill: SOURCE_COLORS[(name || '').toUpperCase()] || '#94A3B8'
     })) : [];
 
     // Chart 2: Pie Chart Data (Legal Area)
@@ -78,8 +78,8 @@ const Dashboard: React.FC = () => {
         color: AREA_COLORS[i % AREA_COLORS.length]
     })) : [];
 
-    const getSourceBadgeColor = (source: string) => {
-        const s = source.toUpperCase();
+    const getSourceBadgeColor = (source?: string) => {
+        const s = (source || '').toUpperCase();
         if (s === 'GAZETTE') return { color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' };
         if (s === 'YARGITAY') return { color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' };
         if (s === 'DANISTAY') return { color: '#4F46E5', bg: 'rgba(79,70,229,0.12)' };

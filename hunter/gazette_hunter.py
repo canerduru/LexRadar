@@ -290,7 +290,7 @@ class GazetteHunter:
         self._logger = structlog.get_logger()
         self._keyword_filter = KeywordFilter(settings.KEYWORDS)
 
-    async def run(self, days_back: int = 1) -> None:
+    async def run(self, days_back: int = 1) -> List[DownloadResult]:
         """
         Run the scraper for the date range [today - days_back + 1, today].
 
@@ -301,10 +301,11 @@ class GazetteHunter:
         _configure_logging(self._settings.LOG_LEVEL)
 
         downloader = AsyncPDFDownloader(self._settings.RAW_PDF_DIR)
-        await self._run_internal(downloader, days_back=days_back)
+        results = await self._run_internal(downloader, days_back=days_back)
         await downloader.aclose()
+        return results
 
-    async def _run_internal(self, downloader: AsyncPDFDownloader, *, days_back: int) -> None:
+    async def _run_internal(self, downloader: AsyncPDFDownloader, *, days_back: int) -> List[DownloadResult]:
         """
         Internal run that accepts an already-created downloader instance.
         """
@@ -329,9 +330,9 @@ class GazetteHunter:
             timeout=httpx.Timeout(30.0, connect=30.0),
             headers={"User-Agent": "Mozilla/5.0"},
         ) as client:
-            download_tasks: List[asyncio.Task[None]] = []
+            download_tasks: List[asyncio.Task[DownloadResult]] = []
 
-            async def _download_one(candidate: PdfCandidate, score: Dict[str, int], matched_keywords: List[str]) -> None:
+            async def _download_one(candidate: PdfCandidate, score: Dict[str, int], matched_keywords: List[str]) -> DownloadResult:
                 """Download and update queue for a single matched PDF."""
 
                 nonlocal pdf_downloaded
@@ -404,6 +405,7 @@ class GazetteHunter:
                             date=str(candidate.date),
                             local_path=result.path,
                         )
+                    return result
 
             for published_date in dates:
                 d_str = published_date.isoformat()
@@ -451,8 +453,9 @@ class GazetteHunter:
                             asyncio.create_task(_download_one(candidate, score, matched_keywords))
                         )
 
+            final_results = []
             if download_tasks:
-                await asyncio.gather(*download_tasks)
+                final_results = await asyncio.gather(*download_tasks)
 
         # Save queue state at the end.
         final_items = list(queue_by_url.values())
@@ -469,6 +472,7 @@ class GazetteHunter:
             f"Summary: {articles_scanned} articles scanned, "
             f"{keyword_match_articles} keyword matches, {pdf_downloaded} PDFs downloaded"
         )
+        return final_results
 
 
 @click.command(context_settings={"help_option_names": ["-h", "--help"]})

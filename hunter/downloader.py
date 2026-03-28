@@ -26,6 +26,7 @@ class DownloadResult:
     date: Date
     file_size_kb: float
     status: str  # 'downloaded' | 'skipped' | 'failed'
+    source: str = 'GAZETTE'
 
 
 def _sanitize_filename(text: str, max_len: int = 140) -> str:

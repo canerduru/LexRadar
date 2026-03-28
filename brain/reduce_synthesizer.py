@@ -38,6 +38,7 @@ class FinalReport(BaseModel):
     action_required: bool = Field(default=False)
     recommended_actions: List[str] = Field(default_factory=list)
     source_url: str = Field(default="")
+    source: str = Field(default="")
     processed_at: str = Field(default="")
 
 

@@ -16,6 +16,9 @@ import structlog
 
 from config.settings import Settings
 from hunter.gazette_hunter import GazetteHunter
+from hunter.yargitay_hunter import YargitayHunter
+from hunter.danistay_hunter import DanistayHunter
+from hunter.kik_hunter import KIKHunter
 from parser.pdf_parser import LlamaParseWrapper
 from parser.metadata_extractor import MetadataExtractor
 from parser.normalizer import DocumentNormalizer
@@ -33,7 +36,10 @@ class PipelineOrchestrator:
         self._logger = structlog.get_logger()
         
         # Instantiate all sub-modules
-        self._hunter = GazetteHunter(settings)
+        self._gazette_hunter = GazetteHunter(settings)
+        self._yargitay_hunter = YargitayHunter()
+        self._danistay_hunter = DanistayHunter()
+        self._kik_hunter = KIKHunter()
         self._parser = LlamaParseWrapper(settings)
         self._normalizer = DocumentNormalizer(settings)
         self._metadata_extractor = MetadataExtractor()
@@ -68,32 +74,54 @@ class PipelineOrchestrator:
         
         # 1. HUNTER PHASE
         try:
-            await self._hunter.run(days_back=days_back)
-            # Fetch URLs of all PDFs downloaded
-            queue_file = self._settings.QUEUE_FILE
-            downloads = []
-            if os.path.exists(queue_file):
-                with open(queue_file, "r", encoding="utf-8") as f:
-                    items = json.load(f)
-                    for item in items:
-                        if item.get("status") == "downloaded" and item.get("local_path"):
-                            downloads.append(item)
+            results = await asyncio.gather(
+                self._gazette_hunter.run(days_back=days_back),
+                self._yargitay_hunter.run(days_back=days_back),
+                self._danistay_hunter.run(days_back=days_back),
+                self._kik_hunter.run(days_back=days_back),
+                return_exceptions=True
+            )
+            
+            all_downloads = []
+            source_counts = {"GAZETTE": 0, "YARGITAY": 0, "DANISTAY": 0, "KIK": 0}
+            
+            for res_list in results:
+                if isinstance(res_list, Exception):
+                    self._logger.error(f"A hunter failed: {str(res_list)}")
+                    summary["errors"].append(str(res_list))
+                    continue
+                
+                # Flatten lists
+                for item in res_list:
+                    if item.status == "downloaded" and item.path:
+                        all_downloads.append(item)
+                    if item.path:
+                        source_counts[item.source] = source_counts.get(item.source, 0) + 1
+            
+            # Log exact counts per source requested by user
+            self._logger.info(f"📰 Gazette: {source_counts.get('GAZETTE', 0)} PDFs")
+            self._logger.info(f"⚖️ Yargıtay: {source_counts.get('YARGITAY', 0)} kararlar")
+            self._logger.info(f"🏛️ Danıştay: {source_counts.get('DANISTAY', 0)} kararlar")
+            self._logger.info(f"📋 KİK: {source_counts.get('KIK', 0)} ihaleler")
+            
+            downloads = all_downloads
             summary["pdfs_found"] = len(downloads)
         except Exception as e:
-            msg = f"Hunter failed: {str(e)}"
+            msg = f"Hunter phase failed: {str(e)}"
             self._logger.error(msg)
             summary["errors"].append(msg)
             downloads = []
 
         # Process each PDF safely
         for item in downloads:
-            pdf_path = item["local_path"]
-            source_url = item.get("url", "")
+            pdf_path = item.path
+            source_url = item.url
             
             try:
                 # 2. PARSER PHASE
                 parse_result = await self._parser.parse(pdf_path)
                 metadata = self._metadata_extractor.extract(parse_result)
+                metadata["source"] = item.source  # Inject source into metadata
                 json_path = await self._normalizer.normalize_and_save(parse_result, metadata, source_url)
                 summary["pdfs_parsed"] += 1
                 
